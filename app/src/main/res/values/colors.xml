@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="dialog_gray">#F9F9F9</color>
+    <color name="blank_gray">#E5E5E5</color>
+    <color name="tab_gray">#EBEBEB</color>
+    <color name="tab_text_gray">#9D9D9D</color>
+    <color name="dark_gray">#BBBBBB</color>
+    <color name="brown">#8D7369</color>
+    <color name="beige">#F2EBE4</color>
+    <color name="button_beige">#F3E9D3</color>>
+    <color name="warning">#F24242</color>
+    <color name="navy">#434C78</color>
+    <color name="light_blue">#D2F1F5</color>
+</resources>

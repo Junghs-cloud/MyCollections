@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:background="@color/dialog_gray"
+    >
+    <TextView
+        android:id="@+id/messageTextView"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginTop="50dp"
+        android:gravity="center"
+        android:text="입력하신 이메일로\n임시 비밀번호가 전송되었습니다."
+        android:textSize="18sp"
+/>
+
+    <Button
+        android:layout_width="220dp"
+        android:layout_height="40dp"
+        android:layout_gravity="center"
+        android:background="@drawable/white_button"
+        android:backgroundTint="@color/button_beige"
+        android:text="확인"
+        android:layout_marginTop="40dp"
+        android:layout_marginBottom="30dp"
+
+/>
+</LinearLayout>

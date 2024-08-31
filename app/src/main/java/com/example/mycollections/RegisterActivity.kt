@@ -14,6 +14,10 @@ class RegisterActivity : AppCompatActivity() {
         setContentView(binding.root)
 
 
+        binding.backButton.setOnClickListener {
+            finish()
+        }
+
         binding.confirmButton.setOnClickListener {
             val dialogBinding = DialogInformBinding.inflate(layoutInflater)
             AlertDialog.Builder(this).run{

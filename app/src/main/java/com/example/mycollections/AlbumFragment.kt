@@ -79,14 +79,11 @@ object ImageUtils {
         val width = bitmap.width
         val height = bitmap.height
 
-        // 정사각형으로 자를 크기 결정
-        val newSize = Math.min(width, height)
+        val newSize = width.coerceAtMost(height)
 
-        // 중앙을 기준으로 자르기
         val x = (width - newSize) / 2
         val y = (height - newSize) / 6
 
-        // 자르기 작업 수행
         return Bitmap.createBitmap(bitmap, x, y, newSize, newSize)
     }
 }

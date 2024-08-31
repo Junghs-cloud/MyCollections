@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center"
+    android:paddingVertical="30dp"
+    android:orientation="horizontal"
+    >
+    <TextView
+        android:id="@+id/keyTextView"
+        android:layout_width="60dp"
+        android:layout_height="50dp"
+        android:text="이름"
+        android:gravity="center"
+        />
+    <EditText
+        android:id="@+id/valueEditText"
+        android:layout_height="50dp"
+        android:layout_width="250dp"
+        android:hint="입력"
+        android:textSize="15sp"
+        android:gravity="center"
+        android:background="@drawable/white_button"
+        android:backgroundTint="@color/beige"
+        />
+
+</LinearLayout>

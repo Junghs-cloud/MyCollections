@@ -4,8 +4,11 @@ import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import com.example.mycollections.databinding.ActivityInitialBinding
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.ktx.auth
 
 class InitialActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -15,9 +18,20 @@ class InitialActivity : AppCompatActivity() {
 
         val id = binding.idEditText.text
         val password = binding.passwordEditText.text
+        val auth = com.google.firebase.ktx.Firebase.auth
+        auth.signOut()
 
         binding.loginButton.setOnClickListener{
-            Log.d("jhs", id.toString()+password.toString())
+            auth.signInWithEmailAndPassword(id.toString(), password.toString()).
+            addOnCompleteListener(this){ task ->
+                if (task.isSuccessful) {
+                    Toast.makeText(this, "로그인에 성공하였습니다.", Toast.LENGTH_SHORT).show()
+                }
+                else
+                {
+                    Toast.makeText(this, "아이디와 비밀번호를 다시 확인해주세요.", Toast.LENGTH_SHORT).show()
+                }
+            }
         }
 
         binding.findIDTextView.setOnClickListener{

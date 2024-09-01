@@ -76,6 +76,7 @@
     </LinearLayout>
 
     <TextView
+        android:id="@+id/idWarningTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="100dp"
@@ -84,6 +85,7 @@
         app:layout_constraintTop_toBottomOf="@+id/idLayout"
         android:textColor="@color/warning"
         android:textSize="12sp"
+        android:visibility="invisible"
         />
 
     <LinearLayout
@@ -117,6 +119,7 @@
             android:textSize="15sp" />
     </LinearLayout>
     <TextView
+        android:id="@+id/passwordWarningTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="100dp"
@@ -125,6 +128,7 @@
         app:layout_constraintTop_toBottomOf="@+id/passwordLayout"
         android:textColor="@color/warning"
         android:textSize="12sp"
+        android:visibility="invisible"
         />
 
     <LinearLayout
@@ -159,6 +163,7 @@
     </LinearLayout>
 
     <TextView
+        android:id="@+id/passwordConfirmWarningTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="100dp"
@@ -167,6 +172,7 @@
         app:layout_constraintTop_toBottomOf="@+id/passwordConfirmLayout"
         android:textColor="@color/warning"
         android:textSize="12sp"
+        android:visibility="invisible"
         />
 
 
@@ -232,6 +238,7 @@
             android:textSize="15sp" />
     </LinearLayout>
     <TextView
+        android:id="@+id/emailWarningTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="100dp"
@@ -240,6 +247,7 @@
         app:layout_constraintTop_toBottomOf="@+id/emailLayout"
         android:textColor="@color/warning"
         android:textSize="12sp"
+        android:visibility="invisible"
         />
 
 

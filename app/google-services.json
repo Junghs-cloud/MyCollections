@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "245246475428",
+    "project_id": "mycollections-abf64",
+    "storage_bucket": "mycollections-abf64.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:245246475428:android:273fbe8c2196c34504ba31",
+        "android_client_info": {
+          "package_name": "com.example.mycollections"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyATC1HR6lfw7KTPx_2uo8FNYOPFX8SJQBE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

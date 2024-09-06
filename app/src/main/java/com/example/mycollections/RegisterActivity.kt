@@ -8,6 +8,8 @@ import android.view.View
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import com.example.mycollections.Utility.auth
+import com.example.mycollections.Utility.db
 import com.example.mycollections.databinding.ActivityRegisterBinding
 import com.example.mycollections.databinding.DialogInformBinding
 import com.google.firebase.auth.ktx.auth
@@ -24,8 +26,6 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 class RegisterActivity : AppCompatActivity() {
-    private val db = Firebase.firestore
-    private val auth = com.google.firebase.ktx.Firebase.auth
     private val idRegex = Regex("^(?=.*[a-z])(?=.*\\d)[a-z\\d]{4,16}\$")
     private val passwordRegex = Regex("^(?=.*[a-zA-Z])(?=.*\\d)[a-zA-Z\\d]{8,}\$")
     private val binding: ActivityRegisterBinding by lazy {
@@ -147,7 +147,7 @@ class RegisterActivity : AppCompatActivity() {
             "name" to name,
             "password" to password
         )
-        db.collection("user").document().set(newUser).addOnSuccessListener {
+        db.collection("user").document(id).set(newUser).addOnSuccessListener {
             auth.createUserWithEmailAndPassword(email, password)
         }
             .addOnFailureListener{

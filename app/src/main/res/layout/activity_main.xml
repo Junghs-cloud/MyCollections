@@ -30,14 +30,15 @@
 
     </androidx.viewpager2.widget.ViewPager2>
 
-    <com.google.android.material.tabs.TabLayout
+    <com.google.android.material.bottomnavigation.BottomNavigationView
         android:id="@+id/tab"
         android:layout_width="match_parent"
         android:layout_height="55dp"
-        android:background="@color/tab_gray"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:tabTextColor="@color/tab_text_gray" />
+        android:background="@color/tab_gray"
+        app:menu="@menu/menu_bottom_nav" />
+
 
 </androidx.constraintlayout.widget.ConstraintLayout>

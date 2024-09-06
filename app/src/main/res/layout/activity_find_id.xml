@@ -64,7 +64,7 @@
             android:textColor="@color/black" />
 
         <EditText
-            android:id="@+id/idEditText"
+            android:id="@+id/nameEditText"
             android:layout_width="match_parent"
             android:layout_height="45dp"
             android:layout_marginRight="20dp"

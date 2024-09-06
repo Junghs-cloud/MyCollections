@@ -1,5 +1,6 @@
 package com.example.mycollections
 
+import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
@@ -11,6 +12,7 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.mycollections.databinding.AlbumRecyclerBinding
 import com.example.mycollections.databinding.FragmentAlbumBinding
+import com.google.android.play.integrity.internal.c
 
 
 // TODO: Rename parameter arguments, choose names that match
@@ -38,52 +40,30 @@ class AlbumFragmentAdapter(val datas: MutableList<CollectionAlbum>):
 }
 
 class AlbumFragment : Fragment() {
-    // TODO: Rename and change types of parameters
-    private var param1: String? = null
-    private var param2: String? = null
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        arguments?.let {
-            param1 = it.getString(ARG_PARAM1)
-            param2 = it.getString(ARG_PARAM2)
-        }
-    }
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
 
-        val binding= FragmentAlbumBinding.inflate(layoutInflater, container, false)
-
+        val binding = FragmentAlbumBinding.inflate(layoutInflater, container, false)
         val album = mutableListOf<CollectionAlbum>()
         binding.albumRecycler.layoutManager= GridLayoutManager(activity, 3)
         binding.albumRecycler.adapter = AlbumFragmentAdapter(album)
+        binding.floatingActionButton.setOnClickListener{
+            val intent= Intent(context, CollectionInformationActivity::class.java)
+            startActivity(intent)
+        }
         return binding.root
     }
 
     private fun makeCollectionAlbum(image: Int, name: String): CollectionAlbum
     {
         val originalBitmap: Bitmap = BitmapFactory.decodeResource(resources, image)
-        val squareBitmap = ImageUtils.cropToSquare(originalBitmap)
+        val squareBitmap = Utility.cropToSquare(originalBitmap)
         return CollectionAlbum(squareBitmap, name)
     }
 }
 
 class CollectionAlbum(val image: Bitmap, val name: String)
 
-object ImageUtils {
-    fun cropToSquare(bitmap: Bitmap?): Bitmap {
-        requireNotNull(bitmap) { "Bitmap cannot be null" }
-        val width = bitmap.width
-        val height = bitmap.height
-
-        val newSize = width.coerceAtMost(height)
-
-        val x = (width - newSize) / 2
-        val y = (height - newSize) / 6
-
-        return Bitmap.createBitmap(bitmap, x, y, newSize, newSize)
-    }
-}

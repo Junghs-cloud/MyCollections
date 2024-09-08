@@ -35,6 +35,8 @@ class RegisterActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
 
+        auth.signOut()
+
         binding.backButton.setOnClickListener {
             finish()
         }
@@ -148,7 +150,9 @@ class RegisterActivity : AppCompatActivity() {
             "password" to password
         )
         db.collection("user").document(id).set(newUser).addOnSuccessListener {
+            Log.d("jhs", password)
             auth.createUserWithEmailAndPassword(email, password)
+            auth.signOut()
         }
             .addOnFailureListener{
                 Toast.makeText(this, "오류가 발생했습니다.\n 잠시 후 다시 시도해주세요.", Toast.LENGTH_SHORT).show()

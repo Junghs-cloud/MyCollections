@@ -54,4 +54,10 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore")
+    implementation(files("libs\\activation.jar"))
+    implementation(files("libs\\additionnal.jar"))
+    implementation(files("libs\\mail.jar"))
+    implementation ("com.github.bumptech.glide:glide:4.11.0")
+    annotationProcessor ("com.github.bumptech.glide:compiler:4.11.0")
+
 }

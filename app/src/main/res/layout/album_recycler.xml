@@ -11,7 +11,7 @@
         android:layout_width="110dp"
         android:layout_height="110dp"
         android:layout_gravity="center"
-        android:src="@drawable/baseline_image_90"
+        android:src="@drawable/image"
         />
     <TextView
         android:id="@+id/nameTextView"

@@ -19,22 +19,23 @@
         android:theme="@style/Theme.MyCollections"
         tools:targetApi="31">
         <activity
+            android:name=".EditUserInfoActivity"
+            android:exported="false" />
+        <activity
+            android:name=".SettingActivity"
+            android:exported="false" />
+        <activity
             android:name=".CollectionInformationActivity"
-            android:exported="true">
-        </activity>
+            android:exported="true" />
         <activity
             android:name=".RegisterActivity"
-            android:exported="true">
-        </activity>
+            android:exported="true" />
         <activity
             android:name=".FindPasswordActivity"
-            android:exported="true" >
-        </activity>
+            android:exported="true" />
         <activity
             android:name=".FindIDActivity"
-            android:exported="true">
-
-        </activity>
+            android:exported="true" />
         <activity
             android:name=".InitialActivity"
             android:exported="true">
@@ -46,8 +47,7 @@
         </activity>
         <activity
             android:name=".MainActivity"
-            android:exported="true">
-        </activity>
+            android:exported="true" />
     </application>
 
 </manifest>

@@ -10,7 +10,7 @@
         android:layout_width="90dp"
         android:layout_height="90dp"
         android:layout_marginLeft="10dp"
-        android:src="@drawable/baseline_image_90"
+        android:src="@drawable/image"
         android:layout_gravity="center"
         />
     <LinearLayout

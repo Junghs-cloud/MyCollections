@@ -1,11 +1,8 @@
 package com.example.mycollections
 
-import android.R
-import android.opengl.Visibility
 import android.os.Bundle
 import android.util.Log
 import android.view.View
-import android.widget.ImageView
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -14,12 +11,10 @@ import com.example.mycollections.Utility.auth
 import com.example.mycollections.Utility.db
 import com.example.mycollections.Utility.sendErrorToastMessage
 import com.example.mycollections.databinding.ActivityFindPasswordBinding
-import com.example.mycollections.databinding.ActivityRegisterBinding
 import com.example.mycollections.databinding.DialogInformBinding
 import com.google.firebase.firestore.QuerySnapshot
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.launch
 
 
@@ -54,7 +49,7 @@ class FindPasswordActivity : AppCompatActivity() {
                     else
                     {
                         val loadingImage = binding.gifImageView
-                        Glide.with(this).load(com.example.mycollections.R.drawable.loading).into(loadingImage)
+                        Glide.with(this).load(R.drawable.loading).into(loadingImage)
                         binding.gifImageView.visibility = View.VISIBLE
                         makeNewPasswordOfUser(querySnapShot, email)
                     }

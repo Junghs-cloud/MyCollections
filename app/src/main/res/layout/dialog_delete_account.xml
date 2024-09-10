@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center"
+    android:paddingVertical="30dp"
+    android:orientation="vertical"
+    >
+    <ImageView
+        android:layout_width="50dp"
+        android:layout_height="50dp"
+        android:src="@drawable/warning"
+        />
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="20dp"
+        android:text="정말로 계정을 삭제하시겠습니까?\n계정을 삭제하기 위해 비밀번호를 입력해주세요."
+        android:gravity="center"
+        />
+    <EditText
+        android:id="@+id/passwordEditText"
+        android:layout_height="50dp"
+        android:layout_width="250dp"
+        android:layout_marginTop="10dp"
+        android:hint="비밀번호를 입력해주세요"
+        android:textSize="15sp"
+        android:gravity="center"
+        />
+</LinearLayout>

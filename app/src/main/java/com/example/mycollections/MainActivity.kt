@@ -1,16 +1,14 @@
 package com.example.mycollections
 
-import android.R
-import android.graphics.Color
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.viewpager2.adapter.FragmentStateAdapter
+import com.example.mycollections.Utility.auth
 import com.example.mycollections.databinding.ActivityMainBinding
-import com.google.android.material.navigation.NavigationBarView
-import com.google.android.material.tabs.TabLayoutMediator
 
 
 class MyFragmentPagerAdapter(activity:FragmentActivity): FragmentStateAdapter(activity) {
@@ -30,10 +28,15 @@ class MainActivity : AppCompatActivity() {
 
         binding.tab.setOnItemSelectedListener { item ->
             when (item.itemId) {
-                com.example.mycollections.R.id.menu_home -> binding.viewPager.currentItem = 0
-                com.example.mycollections.R.id.menu_album->  binding.viewPager.currentItem = 1
+                R.id.menu_home -> binding.viewPager.currentItem = 0
+                R.id.menu_album->  binding.viewPager.currentItem = 1
             }
             true
+        }
+
+        binding.setting.setOnClickListener{
+            val intent= Intent(this, SettingActivity::class.java)
+            startActivity(intent)
         }
     }
 

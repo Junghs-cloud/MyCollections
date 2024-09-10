@@ -54,7 +54,8 @@ class InitialActivity : AppCompatActivity() {
                 auth.signInWithEmailAndPassword(email, password).
                 addOnCompleteListener(this){ task ->
                     if (task.isSuccessful) {
-                        Toast.makeText(this, "로그인에 성공하였습니다.", Toast.LENGTH_SHORT).show()
+                        val intent= Intent(this, MainActivity::class.java)
+                        startActivity(intent)
                     }
                     else
                     {

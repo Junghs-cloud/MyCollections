@@ -23,8 +23,8 @@ object Utility {
         return Bitmap.createBitmap(bitmap, x, y, newSize, newSize)
     }
 
-    fun sendErrorToastMessage(context: Context)
+    fun sendErrorToastMessage(context: Context, text: String = "오류가 발생했습니다. 잠시 후 다시 시도해주세요.")
     {
-        Toast.makeText(context, "오류가 발생했습니다. 잠시 후 다시 시도해주세요.", Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, text, Toast.LENGTH_SHORT).show()
     }
 }

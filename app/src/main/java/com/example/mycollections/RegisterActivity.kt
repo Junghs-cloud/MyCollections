@@ -26,8 +26,6 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 class RegisterActivity : AppCompatActivity() {
-    private val idRegex = Regex("^(?=.*[a-z])(?=.*\\d)[a-z\\d]{4,16}\$")
-    private val passwordRegex = Regex("^(?=.*[a-zA-Z])(?=.*\\d)[a-zA-Z\\d]{8,}\$")
     private val binding: ActivityRegisterBinding by lazy {
         ActivityRegisterBinding.inflate(layoutInflater)
     }
@@ -43,97 +41,13 @@ class RegisterActivity : AppCompatActivity() {
 
         binding.confirmButton.setOnClickListener {
             CoroutineScope(Dispatchers.Main).launch{
-                checkAllConditionsAndRegister()
+                val registerConditionChecker = RegisterConditionChecker(binding)
+                if (registerConditionChecker.checkAllConditions())
+                {
+                    createNewUser(binding)
+                    makeInformDialog()
+                }
             }
-        }
-    }
-    private suspend fun checkAllConditionsAndRegister()
-    {
-        val inputConditions = mutableListOf<Boolean>()
-        val idQuerySnapshot = withContext(Dispatchers.IO) {
-            getQuerySnapShot("id", binding.idEditText.text.toString())
-        }
-        val emailQuerySnapshot = withContext(Dispatchers.IO) {
-            getQuerySnapShot("email", binding.emailEditText.text.toString())
-        }
-        inputConditions.add(isIdQualified(idQuerySnapshot, binding.idWarningTextView))
-        inputConditions.add(isDuplicated(emailQuerySnapshot, binding.emailWarningTextView))
-        inputConditions.add(isPasswordQualified())
-        inputConditions.add(isPasswordConfirmQualified())
-        if (inputConditions.all{ it })
-        {
-            createNewUser(binding)
-            makeInformDialog()
-        }
-    }
-    private suspend fun getQuerySnapShot(field: String, value: String): QuerySnapshot =
-        suspendCancellableCoroutine{ continuation ->
-            val db = FirebaseFirestore.getInstance()
-            val documentRef = db.collection("user")
-
-            val query = documentRef.whereEqualTo(field, value)
-            query.get()
-                .addOnSuccessListener { querySnapShot ->
-                    continuation.resume(querySnapShot)
-                }
-                .addOnFailureListener { exception ->
-                    continuation.resumeWithException(exception)
-                }
-        }
-
-    private fun isIdQualified(query: QuerySnapshot, textView: TextView): Boolean
-    {
-        if (idRegex.matches(binding.idEditText.text.toString()))
-        {
-            textView.text = "이미 존재하는 아이디입니다."
-            return isDuplicated(query, textView)
-        }
-        else
-        {
-            textView.text = "아이디는 4-16자의 영문 소문자와 숫자 조합이어야 합니다."
-            textView.visibility = View.VISIBLE
-            return false
-        }
-    }
-
-    private fun isDuplicated(query: QuerySnapshot, textView: TextView): Boolean
-    {
-        return if (query.isEmpty) {
-            textView.visibility = View.INVISIBLE
-            true
-        } else {
-            textView.visibility = View.VISIBLE
-            false
-        }
-    }
-
-    private fun isPasswordQualified(): Boolean
-    {
-        if (passwordRegex.matches(binding.passwordEditText.text.toString()))
-        {
-            binding.passwordWarningTextView.visibility = View.INVISIBLE
-            return true
-        }
-        else
-        {
-            binding.passwordWarningTextView.visibility = View.VISIBLE
-            return false
-        }
-    }
-
-    private fun isPasswordConfirmQualified(): Boolean
-    {
-        val password = binding.passwordEditText.text.toString()
-        val passwordConfirm = binding.passwordConfirmEditText.text.toString()
-        if (password == passwordConfirm)
-        {
-            binding.passwordConfirmWarningTextView.visibility = View.INVISIBLE
-            return true
-        }
-        else
-        {
-            binding.passwordConfirmWarningTextView.visibility = View.VISIBLE
-            return false
         }
     }
 
@@ -150,7 +64,6 @@ class RegisterActivity : AppCompatActivity() {
             "password" to password
         )
         db.collection("user").document(id).set(newUser).addOnSuccessListener {
-            Log.d("jhs", password)
             auth.createUserWithEmailAndPassword(email, password)
             auth.signOut()
         }

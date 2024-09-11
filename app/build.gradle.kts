@@ -54,6 +54,7 @@ dependencies {
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore")
+    implementation ("com.google.firebase:firebase-storage-ktx")
     implementation(files("libs\\activation.jar"))
     implementation(files("libs\\additionnal.jar"))
     implementation(files("libs\\mail.jar"))

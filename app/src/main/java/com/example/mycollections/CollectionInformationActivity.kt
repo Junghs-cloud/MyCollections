@@ -1,8 +1,10 @@
 package com.example.mycollections
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
+import android.util.Log
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -12,11 +14,16 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import com.bumptech.glide.Glide
+import com.example.mycollections.Utility.db
+import com.example.mycollections.Utility.sendErrorToastMessage
+import com.example.mycollections.Utility.storage
 import com.example.mycollections.databinding.ActivityCollectionInformationBinding
 import com.example.mycollections.databinding.DialogCollectionCostModifyBinding
 import com.example.mycollections.databinding.DialogCollectionMemoBinding
 import com.example.mycollections.databinding.DialogCollectionNameModifyBinding
 import com.example.mycollections.databinding.DialogReleaseDateModifyBinding
+import java.io.File
 
 class CollectionInformationActivity : AppCompatActivity() {
     private val releaseDateRegex = Regex("^\\d{4}년 ([1-9]|1[0-2])월(?: ([1-9]|[1-2][0-9]|3[0-1])일)?|-")
@@ -25,6 +32,8 @@ class CollectionInformationActivity : AppCompatActivity() {
         ActivityCollectionInformationBinding.inflate(layoutInflater)
     }
     private var isModified = true
+    private var filePath = "noImage"
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
@@ -126,6 +135,14 @@ class CollectionInformationActivity : AppCompatActivity() {
     {
         val requestLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             if (it.resultCode === android.app.Activity.RESULT_OK) {
+                Glide.with(applicationContext).load(it.data?.data).into(binding.collectionImage)
+
+                val cursor = contentResolver.query(it.data?.data as Uri,
+                    arrayOf<String>(MediaStore.Images.Media.DATA), null, null, null
+                )
+                cursor?.moveToFirst().let {
+                    filePath = cursor?.getString(0) as String
+                }
                 isModified = true
             }
         }
@@ -181,6 +198,7 @@ class CollectionInformationActivity : AppCompatActivity() {
                         show()
                     }
                 } else {
+                    saveCollectionData()
                     finish()
                 }
                 return true
@@ -192,6 +210,45 @@ class CollectionInformationActivity : AppCompatActivity() {
             }
         }
         return super.onOptionsItemSelected(item)
+    }
+
+    private fun saveCollectionData()
+    {
+        val unixTime = System.currentTimeMillis() / 1000L
+        val ownCategory = binding.ownCategorySpinner.selectedItem.toString()
+        val collectionCategory = binding.collectionCategorySpinner.selectedItem.toString()
+        val name = binding.collectionNameTextView.text.toString()
+        val releaseDate = binding.releaseDateTextView.text.toString()
+        val cost = binding.collectionCostTextView.text.toString()
+        val memo = binding.memoTextView.text.toString()
+        val newCollection = hashMapOf(
+            "unixTime" to unixTime,
+            "ownCategory" to ownCategory,
+            "collectionCategory" to collectionCategory,
+            "name" to name,
+            "releaseDate" to releaseDate,
+            "cost" to cost,
+            "memo" to memo,
+            "filePath" to filePath
+        )
+
+        val id = CurrentUser.user!!.id
+
+        db.collection("user").document(id).collection("collection").add(newCollection)
+            .addOnSuccessListener {
+                if (filePath != "noImage")
+                {
+                    val imageName = it.id
+                    val storageRef = storage.reference
+                    val imgRef = storageRef.child("${id}/${imageName}.png")
+                    val file = Uri.fromFile(File(filePath))
+                    imgRef.putFile(file)
+                }
+
+        }
+            .addOnFailureListener {
+                sendErrorToastMessage(this, it.toString())
+            }
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {

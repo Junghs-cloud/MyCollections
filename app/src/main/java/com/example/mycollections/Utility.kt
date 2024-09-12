@@ -10,6 +10,7 @@ import com.bumptech.glide.Glide
 import com.bumptech.glide.request.target.CustomTarget
 import com.bumptech.glide.request.transition.Transition
 import com.google.firebase.auth.ktx.auth
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
@@ -18,6 +19,23 @@ object Utility {
     val db = Firebase.firestore
     val auth = Firebase.auth
     val storage = Firebase.storage
+
+    fun makeCollectionData(document: DocumentSnapshot): CollectionData
+    {
+        val collectionCategory = document.get("collectionCategory").toString()
+        val cost = document.get("cost").toString()
+        val documentID = document.id
+        val filePath = document.get("filePath").toString()
+        val memo = document.get("memo").toString()
+        val name = document.get("name").toString()
+        val ownCategory = document.get("ownCategory").toString()
+        val releaseDate = document.get("releaseDate").toString()
+        val unixTime = document.get("unixTime").toString().toLong()
+
+        return CollectionData(collectionCategory, cost, documentID, filePath,
+            memo, name, ownCategory, releaseDate, unixTime)
+    }
+
     fun cropToSquare(bitmap: Bitmap?): Bitmap {
         requireNotNull(bitmap) { "Bitmap cannot be null" }
         val width = bitmap.width
@@ -38,25 +56,31 @@ object Utility {
     }
 }
 
-object GlideUtility
+object GlideUtilityContext
 {
-    fun setImageToImageView(context: Fragment, imageView: ImageView, filePath: String, documentID: String)
+    fun setImageToImageView(context: Context, imageView: ImageView, filePath: String, documentID: String)
     {
         getImageAndSetImageView(context, imageView, filePath, documentID)
     }
-    private fun getImageAndSetImageView(context: Fragment, imageView: ImageView, filePath: String, documentID: String)
+
+    private fun getImageAndSetImageView(context: Context, imageView: ImageView, filePath: String, documentID: String)
     {
         if (filePath != "noImage")
         {
-            getBitmap(context, imageView, filePath)
+            try{
+                getBitmap(context, imageView, filePath)
+            }
+            catch (exception: Exception) {
+                getImageFromFirebaseStorage(context, imageView, documentID)
+            }
         }
         else
         {
-            getImageFromFirebaseStorage(context, imageView, documentID)
+            imageView.setImageResource(R.drawable.image)
         }
     }
 
-    private fun getImageFromFirebaseStorage(context: Fragment, imageView: ImageView, documentID: String)
+    private fun getImageFromFirebaseStorage(context: Context, imageView: ImageView, documentID: String)
     {
         val userID = CurrentUser.user!!.id
         val imgRef = Utility.storage.reference.child("${userID}/${documentID}.png")
@@ -66,7 +90,7 @@ object GlideUtility
         }
     }
 
-    private fun getBitmap(context: Fragment, imageView: ImageView, path: String)
+    private fun getBitmap(context: Context, imageView: ImageView, path: String)
     {
         Glide.with(context)
             .asBitmap()

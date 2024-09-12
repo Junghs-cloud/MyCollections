@@ -1,5 +1,6 @@
 package com.example.mycollections
 
+import android.app.Activity
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
@@ -9,13 +10,14 @@ import android.view.Menu
 import android.view.MenuItem
 import android.view.View
 import android.widget.AdapterView
-import android.widget.Spinner
 import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
 import com.example.mycollections.Utility.db
+import com.example.mycollections.Utility.makeCollectionData
 import com.example.mycollections.Utility.sendErrorToastMessage
 import com.example.mycollections.Utility.storage
 import com.example.mycollections.databinding.ActivityCollectionInformationBinding
@@ -31,9 +33,10 @@ class CollectionInformationActivity : AppCompatActivity() {
     private val binding: ActivityCollectionInformationBinding by lazy {
         ActivityCollectionInformationBinding.inflate(layoutInflater)
     }
-    private var isModified = true
+    private var isModified = false
+    private var isModifiedFromSave = true
     private var filePath = "noImage"
-
+    private lateinit var activityType: String
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
@@ -41,9 +44,40 @@ class CollectionInformationActivity : AppCompatActivity() {
         setSupportActionBar(binding.toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
+        activityType = intent.getStringExtra("type").toString()
+        if (activityType == "edit")
+        {
+            setBindingFromParcel()
+        }
+
         setListenersToTextViews()
         addListenerToCollectionImage()
         addListenerToSpinners()
+
+    }
+
+    private fun setBindingFromParcel()
+    {
+        val collectionData = intent.getParcelableExtra<CollectionData>("collectionData")
+        collectionData?.let {
+            GlideUtilityContext.setImageToImageView(this, binding.collectionImage,
+                collectionData.filePath, collectionData.documentID)
+            binding.collectionNameTextView.text = collectionData.name
+            binding.releaseDateTextView.text = collectionData.releaseDate
+            binding.memoTextView.text = collectionData.memo
+            setSelectionToSpinner(collectionData)
+        }
+    }
+
+    private fun setSelectionToSpinner(collectionData: CollectionData)
+    {
+        val ownCategory = resources.getStringArray(R.array.ownCategory)
+        val ownCategoryIndex = ownCategory.indexOf(collectionData.ownCategory)
+        binding.ownCategorySpinner.setSelection(ownCategoryIndex)
+
+        val collectionCategory = resources.getStringArray(R.array.collectionCategory)
+        val index = collectionCategory.indexOf(collectionData.collectionCategory)
+        binding.collectionCategorySpinner.setSelection(index)
     }
 
     private fun setListenersToTextViews()
@@ -56,7 +90,8 @@ class CollectionInformationActivity : AppCompatActivity() {
             dialog.setOnShowListener {
                 dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                     binding.collectionNameTextView.text = dialogBinding.valueEditText.editableText.toString()
-                    isModified=true
+                    isModified = true
+                    isModifiedFromSave=true
                     dialog.dismiss()
                 }
             }
@@ -73,7 +108,8 @@ class CollectionInformationActivity : AppCompatActivity() {
                     if (releaseDateRegex.matches(dialogBinding.valueEditText.editableText.toString()))
                     {
                         binding.releaseDateTextView.text = dialogBinding.valueEditText.editableText.toString()
-                        isModified=true
+                        isModified = true
+                        isModifiedFromSave=true
                         dialog.dismiss()
                     }
                     else
@@ -94,7 +130,8 @@ class CollectionInformationActivity : AppCompatActivity() {
                     if (collectionCostRegex.matches(dialogBinding.valueEditText.editableText.toString()))
                     {
                         binding.collectionCostTextView.text = dialogBinding.valueEditText.editableText.toString()
-                        isModified=true
+                        isModified = true
+                        isModifiedFromSave=true
                         dialog.dismiss()
                     }
                     else
@@ -114,7 +151,8 @@ class CollectionInformationActivity : AppCompatActivity() {
             dialog.setOnShowListener {
                 dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                     binding.memoTextView.text = dialogBinding.valueEditText.text.toString()
-                    isModified=true
+                    isModified = true
+                    isModifiedFromSave=true
                     dialog.dismiss()
                 }
             }
@@ -144,6 +182,7 @@ class CollectionInformationActivity : AppCompatActivity() {
                     filePath = cursor?.getString(0) as String
                 }
                 isModified = true
+                isModifiedFromSave = true
             }
         }
 
@@ -174,7 +213,11 @@ class CollectionInformationActivity : AppCompatActivity() {
             {
                 if (position != previousPosition)
                 {
-                    isModified = true
+                    if (previousPosition != AdapterView.INVALID_POSITION)
+                    {
+                        isModified = true
+                    }
+                    isModifiedFromSave = true
                     previousPosition = position
                 }
             }
@@ -189,7 +232,11 @@ class CollectionInformationActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             android.R.id.home -> {
-                if (isModified) {
+                if (!isModified)
+                {
+                    finish()
+                }
+                else if (isModifiedFromSave) {
                     AlertDialog.Builder(this).run {
                         setTitle("알림")
                         setMessage("\n내용이 저장되지 않았습니다.\n이대로 종료하시겠습니까?\n")
@@ -198,19 +245,42 @@ class CollectionInformationActivity : AppCompatActivity() {
                         show()
                     }
                 } else {
-                    saveCollectionData()
+                    if (activityType == "add")
+                    {
+                        val newCollectionData = makeCollectionData()
+                        val intent = intent
+                        intent.putExtra("newCollectionData", newCollectionData)
+                        setResult(Activity.RESULT_OK, intent)
+                    }
+                    //saveCollectionData()
                     finish()
                 }
                 return true
             }
 
             R.id.save -> {
-                isModified = false
+                isModifiedFromSave = false
                 true
             }
         }
         return super.onOptionsItemSelected(item)
     }
+
+    private fun makeCollectionData(): CollectionData
+    {
+        val unixTime = System.currentTimeMillis() / 1000L
+        val ownCategory = binding.ownCategorySpinner.selectedItem.toString()
+        val collectionCategory = binding.collectionCategorySpinner.selectedItem.toString()
+        val name = binding.collectionNameTextView.text.toString()
+        val releaseDate = binding.releaseDateTextView.text.toString()
+        val cost = binding.collectionCostTextView.text.toString()
+        val memo = binding.memoTextView.text.toString()
+        val id = CurrentUser.user!!.id
+
+        return  CollectionData(collectionCategory, cost, id, filePath,
+            memo, name, ownCategory, releaseDate, unixTime)
+    }
+
 
     private fun saveCollectionData()
     {
@@ -233,6 +303,9 @@ class CollectionInformationActivity : AppCompatActivity() {
         )
 
         val id = CurrentUser.user!!.id
+
+        CollectionData(collectionCategory, cost, id, filePath,
+            memo, name, ownCategory, releaseDate, unixTime)
 
         db.collection("user").document(id).collection("collection").add(newCollection)
             .addOnSuccessListener {

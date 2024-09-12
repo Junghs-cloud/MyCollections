@@ -1,66 +1,28 @@
 package com.example.mycollections
 
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
-import android.graphics.drawable.Drawable
 import android.os.Bundle
+import android.os.Parcel
+import android.os.Parcelable
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.AdapterView
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
-import androidx.recyclerview.widget.RecyclerView
-import com.bumptech.glide.Glide
-import com.bumptech.glide.request.target.CustomTarget
 import com.example.mycollections.Utility.db
-import com.example.mycollections.Utility.storage
-import com.example.mycollections.databinding.AlbumRecyclerBinding
+import com.example.mycollections.Utility.makeCollectionData
 import com.example.mycollections.databinding.FragmentAlbumBinding
-import com.google.firebase.firestore.DocumentSnapshot
-import com.bumptech.glide.request.transition.Transition
-import com.google.android.play.integrity.internal.i
-
-// TODO: Rename parameter arguments, choose names that match
-// the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-private const val ARG_PARAM1 = "param1"
-private const val ARG_PARAM2 = "param2"
-
-
-class AlbumViewHolder(val binding: AlbumRecyclerBinding): RecyclerView.ViewHolder(binding.root)
-
-class AlbumFragmentAdapter(val context: AlbumFragment, var data: List<CollectionData>):
-    RecyclerView.Adapter<RecyclerView.ViewHolder>()
-{
-    override fun getItemCount(): Int = data.size
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder
-            = AlbumViewHolder(AlbumRecyclerBinding.inflate
-        (LayoutInflater.from(parent.context), parent, false))
-
-    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
-        val binding = (holder as AlbumViewHolder).binding
-        binding.nameTextView.text = data[position].collectionName
-        val filePath = data[position].filePath
-        val documentID = data[position].documentID
-        GlideUtility.setImageToImageView(context, binding.collectionImage, filePath, documentID)
-    }
-
-    fun update(newData: List<CollectionData>)
-    {
-        data = newData
-        notifyDataSetChanged()
-    }
-}
 
 class AlbumFragment : Fragment() {
     enum class Category(val position: Int){
-        All(0), ExcepthWishList(1), WishList(2)
+        All(0), ExceptWishList(1), WishList(2)
     }
 
-    private var collectionDocuments: MutableList<DocumentSnapshot>? = null
+    private var allCollectionData: MutableList<CollectionData>? = null
     private var album = mutableListOf<CollectionData>()
     private lateinit var adapter: AlbumFragmentAdapter
     override fun onCreateView(
@@ -71,25 +33,47 @@ class AlbumFragment : Fragment() {
         val binding = FragmentAlbumBinding.inflate(layoutInflater, container, false)
         getCollectionDataFromDB(binding)
 
+        val requestLauncher: ActivityResultLauncher<Intent> = registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult()){
+            it.data!!.getParcelableExtra<CollectionData>("newCollectionData")?.let {
+                allCollectionData?.add(it)
+
+                adapter.notifyDataSetChanged()
+            }
+        }
+
+
         binding.floatingActionButton.setOnClickListener{
             val intent= Intent(context, CollectionInformationActivity::class.java)
-            startActivity(intent)
+            intent.putExtra("type", "add")
+            requestLauncher.launch(intent)
         }
+
+
 
         return binding.root
     }
 
     private fun getCollectionDataFromDB(binding: FragmentAlbumBinding)
     {
-        adapter = AlbumFragmentAdapter(this, album)
+        adapter = AlbumFragmentAdapter(this, album, object: OnViewClickListener{
+            override fun onItemClickListener(view: View?, position: Int) {
+                val intent = Intent(activity, CollectionInformationActivity::class.java)
+                intent.putExtra("type", "edit")
+                intent.putExtra("collectionData", album[position])
+                startActivity(intent)
+            }
+        })
         val userID = CurrentUser.user!!.id
         db.collection("user").document(userID).collection("collection").get()
-            .addOnSuccessListener {
-                collectionDocuments = it.documents
-                for (document in it.documents)
+            .addOnSuccessListener { querySnapshot ->
+                for (document in querySnapshot.documents)
                 {
-                    album.add(CollectionData(document))
+                    val collectionData = makeCollectionData(document)
+                    album.add(collectionData)
                 }
+                album.sortBy { it.unixTime }
+                allCollectionData = album
                 addSortListenerToSpinners(binding)
                 binding.albumRecycler.layoutManager = GridLayoutManager(activity, 3)
                 binding.albumRecycler.adapter = adapter
@@ -103,7 +87,7 @@ class AlbumFragment : Fragment() {
         val ownCategorySpinnerListener = object : AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: AdapterView<*>, view: View, position: Int, id: Long)
             {
-                changeAlbumData(position)
+                changeAlbumData(binding, position)
             }
 
             override fun onNothingSelected(parent: AdapterView<*>?) {
@@ -119,49 +103,53 @@ class AlbumFragment : Fragment() {
             override fun onNothingSelected(parent: AdapterView<*>?) {
             }
         }
+
+        val optionListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>, view: View, position: Int, id: Long)
+            {
+                if (position==0)
+                {
+                    adapter.updateNameOption(false)
+                }
+                else
+                {
+                    adapter.updateNameOption(true)
+                }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+            }
+        }
         binding.ownCategorySpinner.onItemSelectedListener = ownCategorySpinnerListener
         binding.orderSpinner.onItemSelectedListener = sortOrderSpinnerListener
+        binding.showItemSpinner.onItemSelectedListener = optionListener
     }
 
-    private fun changeAlbumData(position: Int)
+    private fun changeAlbumData(binding: FragmentAlbumBinding, position: Int)
     {
-        if (collectionDocuments == null)
+        if (allCollectionData == null)
         {
             return
         }
-        val newAlbum = mutableListOf<CollectionData>()
-        val filtered: List<DocumentSnapshot> = when (position)
+        val filtered: List<CollectionData> = when (position)
         {
-            Category.All.position -> collectionDocuments!!
-            Category.ExcepthWishList.position -> collectionDocuments!!.filter{it.get("ownCategory").toString() != "[위시 리스트]"}
-            else -> collectionDocuments!!.filter{it.get("ownCategory").toString() == "[위시 리스트]"}
+            Category.All.position -> allCollectionData!!
+            Category.ExceptWishList.position -> allCollectionData!!.filter{it.ownCategory != "[위시 리스트]"}
+            else -> allCollectionData!!.filter{it.ownCategory == "[위시 리스트]"}
         }
-        for (document in filtered)
-        {
-            newAlbum.add(CollectionData(document))
-        }
-        adapter.update(newAlbum)
+        adapter.setNewData(filtered)
+        val position = binding.orderSpinner.selectedItemPosition
+        changeSortOrder(position)
+        adapter.update(filtered)
     }
 
     private fun changeSortOrder(position: Int)
     {
         val newOrderAlbum = when (position)
         {
-            0 -> adapter.data.sortedBy { it.releaseDate }
-            else -> adapter.data.sortedBy{it.unixTime}
+            0 -> adapter.data.sortedBy { it.unixTime }
+            else -> adapter.data.sortedBy{it.releaseDate}
         }
         adapter.update(newOrderAlbum)
     }
-
 }
-
-class CollectionData(private val document: DocumentSnapshot)
-{
-    val documentID = document.id
-    val filePath = document.get("filePath").toString()
-    val collectionName = document.get("name").toString()
-    val releaseDate = document.get("releaseDate").toString()
-    val unixTime = document.get("unixTime").toString().toLong()
-}
-
-

@@ -1,9 +1,8 @@
 package com.example.mycollections
 
+import android.content.DialogInterface
 import android.content.Intent
 import android.os.Bundle
-import android.os.Parcel
-import android.os.Parcelable
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
@@ -11,19 +10,21 @@ import android.view.ViewGroup
 import android.widget.AdapterView
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.GridLayoutManager
-import com.example.mycollections.Utility.db
-import com.example.mycollections.Utility.makeCollectionData
+import com.example.mycollections.Utility.isNetworkAvailable
+import com.example.mycollections.Utility.sendErrorToastMessage
 import com.example.mycollections.databinding.FragmentAlbumBinding
 
 class AlbumFragment : Fragment() {
-    enum class Category(val position: Int){
+    enum class Category(val position: Int) {
         All(0), ExceptWishList(1), WishList(2)
     }
 
-    private var allCollectionData: MutableList<CollectionData>? = null
-    private var album = mutableListOf<CollectionData>()
+    private lateinit var mainActivity: MainActivity
+    private lateinit var dataViewModel: DataViewModel
+    private var allCollectionData: List<CollectionData> = listOf()
     private lateinit var adapter: AlbumFragmentAdapter
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -31,62 +32,87 @@ class AlbumFragment : Fragment() {
     ): View? {
 
         val binding = FragmentAlbumBinding.inflate(layoutInflater, container, false)
-        getCollectionDataFromDB(binding)
 
         val requestLauncher: ActivityResultLauncher<Intent> = registerForActivityResult(
-            ActivityResultContracts.StartActivityForResult()){
-            it.data!!.getParcelableExtra<CollectionData>("newCollectionData")?.let {
-                allCollectionData?.add(it)
+            ActivityResultContracts.StartActivityForResult()
+        ) { activityResult ->
+            if (activityResult.data == null) {
+                return@registerForActivityResult
+            }
+            if (activityResult.data!!.getStringExtra("type") == "add") {
+                activityResult.data!!.getParcelableExtra<CollectionData>("newCollectionData")?.let {
+                    dataViewModel.addData(it)
+                }
+            } else {
+                activityResult.data!!.getParcelableExtra<CollectionData>("newCollectionData")?.let {
+                    val position = activityResult.data!!.getIntExtra("position", -1)
+                    if (position != -1) {
+                        if (context != null && isNetworkAvailable(requireContext())) {
+                            dataViewModel.replaceData(allCollectionData?.get(position)!!, it)
+                        } else {
+                            context?.let { it1 -> sendErrorToastMessage(it1, "네트워크 연결을 확인해주세요.") }
+                        }
+                    }
 
-                adapter.notifyDataSetChanged()
+                }
             }
         }
 
+        getCollectionDataFromDB(binding, requestLauncher)
+        addSortListenerToSpinners(binding)
+        binding.albumRecycler.layoutManager = GridLayoutManager(activity, 3)
+        binding.albumRecycler.adapter = adapter
 
-        binding.floatingActionButton.setOnClickListener{
-            val intent= Intent(context, CollectionInformationActivity::class.java)
+        mainActivity = requireActivity() as MainActivity
+        dataViewModel = mainActivity.dataViewModel
+
+        dataViewModel.album.observe(viewLifecycleOwner) {
+            allCollectionData = it
+            adapter.update(allCollectionData!!)
+        }
+
+        binding.floatingActionButton.setOnClickListener {
+            val intent = Intent(context, CollectionInformationActivity::class.java)
             intent.putExtra("type", "add")
             requestLauncher.launch(intent)
         }
-
-
-
         return binding.root
     }
 
-    private fun getCollectionDataFromDB(binding: FragmentAlbumBinding)
-    {
-        adapter = AlbumFragmentAdapter(this, album, object: OnViewClickListener{
+    private fun getCollectionDataFromDB(
+        binding: FragmentAlbumBinding,
+        requestLauncher: ActivityResultLauncher<Intent>
+    ) {
+        adapter = AlbumFragmentAdapter(this, allCollectionData, object : OnViewClickListener {
             override fun onItemClickListener(view: View?, position: Int) {
                 val intent = Intent(activity, CollectionInformationActivity::class.java)
                 intent.putExtra("type", "edit")
-                intent.putExtra("collectionData", album[position])
-                startActivity(intent)
+                intent.putExtra("position", position)
+                intent.putExtra("collectionData", allCollectionData[position])
+                requestLauncher.launch(intent)
+            }
+
+            override fun onItemLongClickListener(view: View?, position: Int) {
+                AlertDialog.Builder(requireContext()).run {
+                    setMessage("해당 컬렉션을 삭제하시겠습니까?")
+                    setNegativeButton("아니오", null)
+                    setPositiveButton("네") { dialogInterface: DialogInterface, i: Int ->
+                        dataViewModel.removeData(allCollectionData[position], context)
+                    }
+                    show()
+                }
             }
         })
-        val userID = CurrentUser.user!!.id
-        db.collection("user").document(userID).collection("collection").get()
-            .addOnSuccessListener { querySnapshot ->
-                for (document in querySnapshot.documents)
-                {
-                    val collectionData = makeCollectionData(document)
-                    album.add(collectionData)
-                }
-                album.sortBy { it.unixTime }
-                allCollectionData = album
-                addSortListenerToSpinners(binding)
-                binding.albumRecycler.layoutManager = GridLayoutManager(activity, 3)
-                binding.albumRecycler.adapter = adapter
-            }
-            .addOnFailureListener {
-            }
     }
 
-    private fun addSortListenerToSpinners(binding: FragmentAlbumBinding)
-    {
+    private fun addSortListenerToSpinners(binding: FragmentAlbumBinding) {
         val ownCategorySpinnerListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>, view: View, position: Int, id: Long)
-            {
+            override fun onItemSelected(
+                parent: AdapterView<*>,
+                view: View,
+                position: Int,
+                id: Long
+            ) {
                 changeAlbumData(binding, position)
             }
 
@@ -95,8 +121,12 @@ class AlbumFragment : Fragment() {
         }
 
         val sortOrderSpinnerListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>, view: View, position: Int, id: Long)
-            {
+            override fun onItemSelected(
+                parent: AdapterView<*>,
+                view: View,
+                position: Int,
+                id: Long
+            ) {
                 changeSortOrder(position)
             }
 
@@ -105,14 +135,15 @@ class AlbumFragment : Fragment() {
         }
 
         val optionListener = object : AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: AdapterView<*>, view: View, position: Int, id: Long)
-            {
-                if (position==0)
-                {
+            override fun onItemSelected(
+                parent: AdapterView<*>,
+                view: View,
+                position: Int,
+                id: Long
+            ) {
+                if (position == 0) {
                     adapter.updateNameOption(false)
-                }
-                else
-                {
+                } else {
                     adapter.updateNameOption(true)
                 }
             }
@@ -125,17 +156,14 @@ class AlbumFragment : Fragment() {
         binding.showItemSpinner.onItemSelectedListener = optionListener
     }
 
-    private fun changeAlbumData(binding: FragmentAlbumBinding, position: Int)
-    {
-        if (allCollectionData == null)
-        {
+    private fun changeAlbumData(binding: FragmentAlbumBinding, position: Int) {
+        if (allCollectionData == null) {
             return
         }
-        val filtered: List<CollectionData> = when (position)
-        {
+        val filtered: List<CollectionData> = when (position) {
             Category.All.position -> allCollectionData!!
-            Category.ExceptWishList.position -> allCollectionData!!.filter{it.ownCategory != "[위시 리스트]"}
-            else -> allCollectionData!!.filter{it.ownCategory == "[위시 리스트]"}
+            Category.ExceptWishList.position -> allCollectionData!!.filter { it.ownCategory != "[위시 리스트]" }
+            else -> allCollectionData!!.filter { it.ownCategory == "[위시 리스트]" }
         }
         adapter.setNewData(filtered)
         val position = binding.orderSpinner.selectedItemPosition
@@ -143,12 +171,10 @@ class AlbumFragment : Fragment() {
         adapter.update(filtered)
     }
 
-    private fun changeSortOrder(position: Int)
-    {
-        val newOrderAlbum = when (position)
-        {
+    private fun changeSortOrder(position: Int) {
+        val newOrderAlbum = when (position) {
             0 -> adapter.data.sortedBy { it.unixTime }
-            else -> adapter.data.sortedBy{it.releaseDate}
+            else -> adapter.data.sortedBy { it.releaseDate }
         }
         adapter.update(newOrderAlbum)
     }

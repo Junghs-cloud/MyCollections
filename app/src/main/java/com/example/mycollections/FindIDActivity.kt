@@ -26,13 +26,10 @@ class FindIDActivity : AppCompatActivity() {
             val name = binding.nameEditText.text.toString()
             val email = binding.emailEditText.text.toString()
             db.collection("user").whereEqualTo("name", name).whereEqualTo("email", email).get()
-                .addOnSuccessListener {querySnapShot->
-                    if (querySnapShot.isEmpty)
-                    {
+                .addOnSuccessListener { querySnapShot ->
+                    if (querySnapShot.isEmpty) {
                         Toast.makeText(this, "해당하는 아이디가 없습니다.", Toast.LENGTH_SHORT).show()
-                    }
-                    else
-                    {
+                    } else {
                         val id = querySnapShot.documents[0].data?.get("id").toString()
                         makeInformDialog(id)
                     }
@@ -44,11 +41,10 @@ class FindIDActivity : AppCompatActivity() {
         }
     }
 
-    private fun makeInformDialog(id: String)
-    {
+    private fun makeInformDialog(id: String) {
         val dialogBinding = DialogInformBinding.inflate(layoutInflater)
-        dialogBinding.messageTextView.text="아이디는 "+id+"입니다. \n 확인 버튼을 누르면 초기로 돌아갑니다."
-        AlertDialog.Builder(this).run{
+        dialogBinding.messageTextView.text = "아이디는 " + id + "입니다. \n 확인 버튼을 누르면 초기로 돌아갑니다."
+        AlertDialog.Builder(this).run {
             setView(dialogBinding.root)
             dialogBinding.confirmButton.setOnClickListener {
                 finish()

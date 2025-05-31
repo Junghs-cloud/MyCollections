@@ -59,6 +59,7 @@ dependencies {
     implementation(files("libs\\additionnal.jar"))
     implementation(files("libs\\mail.jar"))
     implementation ("com.github.bumptech.glide:glide:4.11.0")
+    implementation ("androidx.security:security-crypto-ktx:1.1.0-alpha03")
     annotationProcessor ("com.github.bumptech.glide:compiler:4.11.0")
 
 }

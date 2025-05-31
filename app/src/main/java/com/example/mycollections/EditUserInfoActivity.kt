@@ -31,7 +31,7 @@ class EditUserInfoActivity : AppCompatActivity() {
             finish()
         }
 
-        binding.passwordLayout.setOnClickListener{
+        binding.passwordLayout.setOnClickListener {
             makePasswordDialog()
         }
 
@@ -41,8 +41,7 @@ class EditUserInfoActivity : AppCompatActivity() {
 
     }
 
-    private fun makePasswordDialog()
-    {
+    private fun makePasswordDialog() {
         val dialogBinding = DialogUpdatePasswordBinding.inflate(layoutInflater)
         val builder = AlertDialog.Builder(this)
         builder.setView(dialogBinding.root)
@@ -51,19 +50,18 @@ class EditUserInfoActivity : AppCompatActivity() {
         dialogBinding.cancelButton.setOnClickListener { dialog.dismiss() }
         dialogBinding.confirmButton.setOnClickListener {
             val newPassword = dialogBinding.newPasswordEditText.text.toString()
-            val editUserInfoConditionChecker = EditUserInfoConditionChecker(dialogBinding, currentPassword)
-            if (editUserInfoConditionChecker.checkAllConditions())
-            {
+            val editUserInfoConditionChecker =
+                EditUserInfoConditionChecker(dialogBinding, currentPassword)
+            if (editUserInfoConditionChecker.checkAllConditions()) {
                 updatePassword(dialog, newPassword)
             }
         }
         dialog.show()
     }
 
-    private fun updatePassword(dialog: AlertDialog, newPassword: String)
-    {
+    private fun updatePassword(dialog: AlertDialog, newPassword: String) {
         auth.currentUser!!.updatePassword(newPassword)
-            .addOnSuccessListener{
+            .addOnSuccessListener {
                 updateDB(dialog, "password", newPassword)
             }
             .addOnFailureListener {
@@ -71,12 +69,10 @@ class EditUserInfoActivity : AppCompatActivity() {
             }
     }
 
-    private fun updateDB(dialog: AlertDialog, field: String, newValue: String)
-    {
+    private fun updateDB(dialog: AlertDialog, field: String, newValue: String) {
         db.collection("user").document(id).update(field, newValue)
             .addOnSuccessListener {
-                if (field == "password")
-                {
+                if (field == "password") {
                     CurrentUser.user!!.password = newValue
                     currentPassword = newValue
                 }
@@ -87,8 +83,7 @@ class EditUserInfoActivity : AppCompatActivity() {
             }
     }
 
-    private fun makeNameDialog()
-    {
+    private fun makeNameDialog() {
         val dialogBinding = DialogEditNameBinding.inflate(layoutInflater)
         val builder = AlertDialog.Builder(this)
         builder.setView(dialogBinding.root)
@@ -97,23 +92,19 @@ class EditUserInfoActivity : AppCompatActivity() {
         dialogBinding.cancelButton.setOnClickListener { dialog.dismiss() }
         dialogBinding.confirmButton.setOnClickListener {
             val password = dialogBinding.currentPasswordEditText.text.toString()
-            if (currentPassword == password)
-            {
+            if (currentPassword == password) {
                 val newName = dialogBinding.nameEditText.text.toString()
                 updateDB(dialog, "name", newName)
                 binding.nameTextView.text = newName
                 CurrentUser.user!!.name = newName
-            }
-            else
-            {
-                dialogBinding.currentPasswordWarningTextView.visibility= View.VISIBLE
+            } else {
+                dialogBinding.currentPasswordWarningTextView.visibility = View.VISIBLE
             }
         }
         dialog.show()
     }
 
-    private fun loadUserInfo()
-    {
+    private fun loadUserInfo() {
         val name = CurrentUser.user!!.name
 
         binding.idTextView.text = id

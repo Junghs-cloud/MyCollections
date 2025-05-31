@@ -22,6 +22,7 @@ class FindPasswordActivity : AppCompatActivity() {
     private val binding: ActivityFindPasswordBinding by lazy {
         ActivityFindPasswordBinding.inflate(layoutInflater)
     }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
@@ -38,16 +39,15 @@ class FindPasswordActivity : AppCompatActivity() {
 
         binding.confirmButton.setOnClickListener {
             val id = id.toString()
-            val name= name.toString()
+            val name = name.toString()
             val email = email.toString()
-            db.collection("user").whereEqualTo("id", id).whereEqualTo("name", name).whereEqualTo("email", email).get()
-                .addOnSuccessListener {querySnapShot->
-                    if (querySnapShot.isEmpty)
-                    {
-                        Toast.makeText(this, "아이디, 이름, 이메일 정보가 올바르지 않습니다.", Toast.LENGTH_SHORT).show()
-                    }
-                    else
-                    {
+            db.collection("user").whereEqualTo("id", id).whereEqualTo("name", name)
+                .whereEqualTo("email", email).get()
+                .addOnSuccessListener { querySnapShot ->
+                    if (querySnapShot.isEmpty) {
+                        Toast.makeText(this, "아이디, 이름, 이메일 정보가 올바르지 않습니다.", Toast.LENGTH_SHORT)
+                            .show()
+                    } else {
                         val loadingImage = binding.gifImageView
                         Glide.with(this).load(R.drawable.loading).into(loadingImage)
                         binding.gifImageView.visibility = View.VISIBLE
@@ -60,10 +60,9 @@ class FindPasswordActivity : AppCompatActivity() {
         }
     }
 
-    private fun makeInformDialog()
-    {
+    private fun makeInformDialog() {
         val dialogBinding = DialogInformBinding.inflate(layoutInflater)
-        AlertDialog.Builder(this).run{
+        AlertDialog.Builder(this).run {
             setView(dialogBinding.root)
             dialogBinding.confirmButton.setOnClickListener {
                 finish()
@@ -72,65 +71,56 @@ class FindPasswordActivity : AppCompatActivity() {
         }
     }
 
-    private fun makeNewPasswordOfUser(querySnapShot: QuerySnapshot, email: String)
-    {
+    private fun makeNewPasswordOfUser(querySnapShot: QuerySnapshot, email: String) {
         val password = querySnapShot.documents[0].data?.get("password").toString()
         val userID = querySnapShot.documents[0].id
         updateAuthAndDB(userID, password, email)
     }
 
-    private fun updateAuthAndDB(userID: String, password: String, email: String)
-    {
+    private fun updateAuthAndDB(userID: String, password: String, email: String) {
         auth.signInWithEmailAndPassword(email, password).addOnCompleteListener {
-            if (it.isSuccessful)
-            {
+            if (it.isSuccessful) {
                 val user = auth.currentUser
                 val newPassword = makeNewPassword()
-                user?.updatePassword(newPassword)?.addOnCompleteListener {task->
-                    if (task.isSuccessful)
-                    {
+                user?.updatePassword(newPassword)?.addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
                         updateDBAndSendEmail(userID, newPassword, email)
-                    }
-                    else
-                    {
+                    } else {
                         binding.gifImageView.visibility = View.INVISIBLE
                         sendErrorToastMessage(this)
                     }
                 }
-            }
-            else
-            {
+            } else {
                 binding.gifImageView.visibility = View.INVISIBLE
                 sendErrorToastMessage(this)
             }
         }
     }
 
-    private fun updateDBAndSendEmail(documentID: String, newPassword: String, email: String)
-    {
-        db.collection("user").document(documentID).update("password", newPassword).addOnCompleteListener{ its->
-            binding.gifImageView.visibility = View.INVISIBLE
-            if(its.isSuccessful){
-                CoroutineScope(Dispatchers.IO).launch {
-                    val emailSender = EmailSender(email, newPassword)
-                    emailSender.sendMail()
+    private fun updateDBAndSendEmail(documentID: String, newPassword: String, email: String) {
+        db.collection("user").document(documentID).update("password", newPassword)
+            .addOnCompleteListener { its ->
+                binding.gifImageView.visibility = View.INVISIBLE
+                if (its.isSuccessful) {
+                    CoroutineScope(Dispatchers.IO).launch {
+                        val emailSender = EmailSender(email, newPassword)
+                        emailSender.sendMail()
+                    }
+                    makeInformDialog()
+                } else {
+                    sendErrorToastMessage(this)
                 }
-                makeInformDialog()
             }
-            else
-            {
-                sendErrorToastMessage(this)
-            }
-        }
     }
 
-    private fun makeNewPassword(): String
-    {
+    private fun makeNewPassword(): String {
         var newPassword = ""
-        val str = arrayOf("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
+        val str = arrayOf(
+            "a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l", "m",
             "n", "o", "p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z",
-            "1", "2", "3", "4", "5", "6", "7", "8", "9", "0")
-        val range=str.indices
+            "1", "2", "3", "4", "5", "6", "7", "8", "9", "0"
+        )
+        val range = str.indices
         for (x in 0..7) {
             val random = range.random()
             newPassword += str[random]

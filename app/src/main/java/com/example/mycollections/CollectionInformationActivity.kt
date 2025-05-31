@@ -11,13 +11,12 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.AdapterView
 import android.widget.Toast
-import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.bumptech.glide.Glide
 import com.example.mycollections.Utility.db
-import com.example.mycollections.Utility.makeCollectionData
+import com.example.mycollections.Utility.isNetworkAvailable
 import com.example.mycollections.Utility.sendErrorToastMessage
 import com.example.mycollections.Utility.storage
 import com.example.mycollections.databinding.ActivityCollectionInformationBinding
@@ -28,15 +27,19 @@ import com.example.mycollections.databinding.DialogReleaseDateModifyBinding
 import java.io.File
 
 class CollectionInformationActivity : AppCompatActivity() {
-    private val releaseDateRegex = Regex("^\\d{4}년 ([1-9]|1[0-2])월(?: ([1-9]|[1-2][0-9]|3[0-1])일)?|-")
+    private val releaseDateRegex =
+        Regex("^\\d{4}년 ([1-9]|1[0-2])월(?: ([1-9]|[1-2][0-9]|3[0-1])일)?|-")
     private val collectionCostRegex = Regex("^[1-9][0-9]*원\$|-")
     private val binding: ActivityCollectionInformationBinding by lazy {
         ActivityCollectionInformationBinding.inflate(layoutInflater)
     }
     private var isModified = false
     private var isModifiedFromSave = true
+    private var unixTime: Long = 0
+    private var position = -1
     private var filePath = "noImage"
     private lateinit var activityType: String
+    private lateinit var documentID: String
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
@@ -45,32 +48,37 @@ class CollectionInformationActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
 
         activityType = intent.getStringExtra("type").toString()
-        if (activityType == "edit")
-        {
+        if (activityType == "edit") {
             setBindingFromParcel()
+            position = intent.getIntExtra("position", -1)
+        } else {
+            unixTime = System.currentTimeMillis() / 1000L
         }
-
         setListenersToTextViews()
         addListenerToCollectionImage()
         addListenerToSpinners()
 
     }
 
-    private fun setBindingFromParcel()
-    {
+    private fun setBindingFromParcel() {
         val collectionData = intent.getParcelableExtra<CollectionData>("collectionData")
         collectionData?.let {
-            GlideUtilityContext.setImageToImageView(this, binding.collectionImage,
-                collectionData.filePath, collectionData.documentID)
+            GlideUtilityContext.setImageToImageView(
+                this, binding.collectionImage,
+                collectionData.filePath, collectionData.documentID
+            )
             binding.collectionNameTextView.text = collectionData.name
             binding.releaseDateTextView.text = collectionData.releaseDate
             binding.memoTextView.text = collectionData.memo
+            binding.collectionCostTextView.text = collectionData.cost
+            unixTime = collectionData.unixTime
+            filePath = collectionData.filePath
+            documentID = collectionData.documentID
             setSelectionToSpinner(collectionData)
         }
     }
 
-    private fun setSelectionToSpinner(collectionData: CollectionData)
-    {
+    private fun setSelectionToSpinner(collectionData: CollectionData) {
         val ownCategory = resources.getStringArray(R.array.ownCategory)
         val ownCategoryIndex = ownCategory.indexOf(collectionData.ownCategory)
         binding.ownCategorySpinner.setSelection(ownCategoryIndex)
@@ -80,40 +88,38 @@ class CollectionInformationActivity : AppCompatActivity() {
         binding.collectionCategorySpinner.setSelection(index)
     }
 
-    private fun setListenersToTextViews()
-    {
-        binding.collectionNameTextView.setOnClickListener{
+    private fun setListenersToTextViews() {
+        binding.collectionNameTextView.setOnClickListener {
             val dialogBinding = DialogCollectionNameModifyBinding.inflate(layoutInflater)
             val builder = makeBuilder(dialogBinding)
             val dialog = builder.create()
 
             dialog.setOnShowListener {
                 dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                    binding.collectionNameTextView.text = dialogBinding.valueEditText.editableText.toString()
+                    binding.collectionNameTextView.text =
+                        dialogBinding.valueEditText.editableText.toString()
                     isModified = true
-                    isModifiedFromSave=true
+                    isModifiedFromSave = true
                     dialog.dismiss()
                 }
             }
             dialog.show()
         }
 
-        binding.releaseDateTextView.setOnClickListener{
+        binding.releaseDateTextView.setOnClickListener {
             val dialogBinding = DialogReleaseDateModifyBinding.inflate(layoutInflater)
             val builder = makeBuilder(dialogBinding)
             val dialog = builder.create()
 
             dialog.setOnShowListener {
                 dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                    if (releaseDateRegex.matches(dialogBinding.valueEditText.editableText.toString()))
-                    {
-                        binding.releaseDateTextView.text = dialogBinding.valueEditText.editableText.toString()
+                    if (releaseDateRegex.matches(dialogBinding.valueEditText.editableText.toString())) {
+                        binding.releaseDateTextView.text =
+                            dialogBinding.valueEditText.editableText.toString()
                         isModified = true
-                        isModifiedFromSave=true
+                        isModifiedFromSave = true
                         dialog.dismiss()
-                    }
-                    else
-                    {
+                    } else {
                         dialogBinding.warningTextView.visibility = View.VISIBLE
                     }
                 }
@@ -127,15 +133,13 @@ class CollectionInformationActivity : AppCompatActivity() {
             val dialog = builder.create()
             dialog.setOnShowListener {
                 dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                    if (collectionCostRegex.matches(dialogBinding.valueEditText.editableText.toString()))
-                    {
-                        binding.collectionCostTextView.text = dialogBinding.valueEditText.editableText.toString()
+                    if (collectionCostRegex.matches(dialogBinding.valueEditText.editableText.toString())) {
+                        binding.collectionCostTextView.text =
+                            dialogBinding.valueEditText.editableText.toString()
                         isModified = true
-                        isModifiedFromSave=true
+                        isModifiedFromSave = true
                         dialog.dismiss()
-                    }
-                    else
-                    {
+                    } else {
                         dialogBinding.warningTextView.visibility = View.VISIBLE
                     }
                 }
@@ -143,7 +147,7 @@ class CollectionInformationActivity : AppCompatActivity() {
             dialog.show()
         }
 
-        binding.memoTextView.setOnClickListener{
+        binding.memoTextView.setOnClickListener {
             val dialogBinding = DialogCollectionMemoBinding.inflate(layoutInflater)
             dialogBinding.valueEditText.setText(binding.memoTextView.text.toString())
             val builder = makeBuilder(dialogBinding)
@@ -152,7 +156,7 @@ class CollectionInformationActivity : AppCompatActivity() {
                 dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                     binding.memoTextView.text = dialogBinding.valueEditText.text.toString()
                     isModified = true
-                    isModifiedFromSave=true
+                    isModifiedFromSave = true
                     dialog.dismiss()
                 }
             }
@@ -160,8 +164,7 @@ class CollectionInformationActivity : AppCompatActivity() {
         }
     }
 
-    private fun makeBuilder(binding: androidx.viewbinding.ViewBinding):  AlertDialog.Builder
-    {
+    private fun makeBuilder(binding: androidx.viewbinding.ViewBinding): AlertDialog.Builder {
         val builder = AlertDialog.Builder(this)
         builder.setView(binding.root)
         builder.setNegativeButton("취소", null)
@@ -169,52 +172,51 @@ class CollectionInformationActivity : AppCompatActivity() {
         return builder
     }
 
-    private fun addListenerToCollectionImage()
-    {
-        val requestLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            if (it.resultCode === android.app.Activity.RESULT_OK) {
-                Glide.with(applicationContext).load(it.data?.data).into(binding.collectionImage)
+    private fun addListenerToCollectionImage() {
+        val requestLauncher =
+            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+                if (it.resultCode === android.app.Activity.RESULT_OK) {
+                    Glide.with(applicationContext).load(it.data?.data).into(binding.collectionImage)
 
-                val cursor = contentResolver.query(it.data?.data as Uri,
-                    arrayOf<String>(MediaStore.Images.Media.DATA), null, null, null
-                )
-                cursor?.moveToFirst().let {
-                    filePath = cursor?.getString(0) as String
+                    val cursor = contentResolver.query(
+                        it.data?.data as Uri,
+                        arrayOf<String>(MediaStore.Images.Media.DATA), null, null, null
+                    )
+                    cursor?.moveToFirst().let {
+                        filePath = cursor?.getString(0) as String
+                    }
+                    isModified = true
+                    isModifiedFromSave = true
                 }
-                isModified = true
-                isModifiedFromSave = true
             }
-        }
 
-        val requestPermissionLauncher = registerForActivityResult(ActivityResultContracts.RequestPermission())
-        {isGranted->
-            if (isGranted)
-            {
-                val intent = Intent(Intent.ACTION_PICK)
-                intent.setDataAndType(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "image/*")
-                requestLauncher.launch(intent)
+        val requestPermissionLauncher =
+            registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted ->
+                if (isGranted) {
+                    val intent = Intent(Intent.ACTION_PICK)
+                    intent.setDataAndType(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, "image/*")
+                    requestLauncher.launch(intent)
+                } else {
+                    Toast.makeText(this, "사진 및 동영상 권한을 설정해야 합니다.", Toast.LENGTH_SHORT).show()
+                }
             }
-            else
-            {
-                Toast.makeText(this, "사진 및 동영상 권한을 설정해야 합니다.", Toast.LENGTH_SHORT).show()
-            }
-        }
 
-        binding.collectionImage.setOnClickListener{
+        binding.collectionImage.setOnClickListener {
             requestPermissionLauncher.launch("android.permission.READ_MEDIA_IMAGES")
         }
     }
 
-    private fun addListenerToSpinners()
-    {
+    private fun addListenerToSpinners() {
         val spinnerSelectListener = object : AdapterView.OnItemSelectedListener {
             private var previousPosition = AdapterView.INVALID_POSITION
-            override fun onItemSelected(parent: AdapterView<*>, view: View, position: Int, id: Long)
-            {
-                if (position != previousPosition)
-                {
-                    if (previousPosition != AdapterView.INVALID_POSITION)
-                    {
+            override fun onItemSelected(
+                parent: AdapterView<*>,
+                view: View,
+                position: Int,
+                id: Long
+            ) {
+                if (position != previousPosition) {
+                    if (previousPosition != AdapterView.INVALID_POSITION) {
                         isModified = true
                     }
                     isModifiedFromSave = true
@@ -232,27 +234,14 @@ class CollectionInformationActivity : AppCompatActivity() {
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
             android.R.id.home -> {
-                if (!isModified)
-                {
+                if (!isModified) {
                     finish()
-                }
-                else if (isModifiedFromSave) {
-                    AlertDialog.Builder(this).run {
-                        setTitle("알림")
-                        setMessage("\n내용이 저장되지 않았습니다.\n이대로 종료하시겠습니까?\n")
-                        setNegativeButton("아니오", null)
-                        setPositiveButton("네") { DialogInterface, Int -> finish() }
-                        show()
-                    }
+                } else if (isModifiedFromSave) {
+                    makeWarningDialog()
+                } else if (isNetworkAvailable(this)){
+                    saveNewCollectionData()
                 } else {
-                    if (activityType == "add")
-                    {
-                        val newCollectionData = makeCollectionData()
-                        val intent = intent
-                        intent.putExtra("newCollectionData", newCollectionData)
-                        setResult(Activity.RESULT_OK, intent)
-                    }
-                    //saveCollectionData()
+                    sendErrorToastMessage(this, "네트워크 연결을 확인해주세요.")
                     finish()
                 }
                 return true
@@ -266,62 +255,94 @@ class CollectionInformationActivity : AppCompatActivity() {
         return super.onOptionsItemSelected(item)
     }
 
-    private fun makeCollectionData(): CollectionData
-    {
-        val unixTime = System.currentTimeMillis() / 1000L
-        val ownCategory = binding.ownCategorySpinner.selectedItem.toString()
-        val collectionCategory = binding.collectionCategorySpinner.selectedItem.toString()
-        val name = binding.collectionNameTextView.text.toString()
-        val releaseDate = binding.releaseDateTextView.text.toString()
-        val cost = binding.collectionCostTextView.text.toString()
-        val memo = binding.memoTextView.text.toString()
-        val id = CurrentUser.user!!.id
-
-        return  CollectionData(collectionCategory, cost, id, filePath,
-            memo, name, ownCategory, releaseDate, unixTime)
+    private fun makeWarningDialog() {
+        AlertDialog.Builder(this).run {
+            setTitle("알림")
+            setMessage("\n내용이 저장되지 않았습니다.\n이대로 종료하시겠습니까?\n")
+            setNegativeButton("아니오", null)
+            setPositiveButton("네") { DialogInterface, Int -> finish() }
+            show()
+        }
     }
 
+    private fun saveNewCollectionData() {
+        val newCollectionData = makeCollectionData()
+        val intent = intent
+        intent.putExtra("newCollectionData", newCollectionData)
+        if (activityType == "add") {
+            intent.putExtra("type", "add")
+            saveCollectionData(newCollectionData)
+        } else {
+            intent.putExtra("type", "edit")
+            intent.putExtra("position", position)
+            updateCollectionData(newCollectionData)
+        }
+        setResult(Activity.RESULT_OK, intent)
+        finish()
+    }
 
-    private fun saveCollectionData()
-    {
-        val unixTime = System.currentTimeMillis() / 1000L
+    private fun makeCollectionData(): CollectionData {
         val ownCategory = binding.ownCategorySpinner.selectedItem.toString()
         val collectionCategory = binding.collectionCategorySpinner.selectedItem.toString()
         val name = binding.collectionNameTextView.text.toString()
         val releaseDate = binding.releaseDateTextView.text.toString()
         val cost = binding.collectionCostTextView.text.toString()
         val memo = binding.memoTextView.text.toString()
-        val newCollection = hashMapOf(
-            "unixTime" to unixTime,
-            "ownCategory" to ownCategory,
-            "collectionCategory" to collectionCategory,
-            "name" to name,
-            "releaseDate" to releaseDate,
-            "cost" to cost,
-            "memo" to memo,
-            "filePath" to filePath
-        )
+        if (activityType == "add") {
+            val id = CurrentUser.user!!.id
+            return CollectionData(
+                collectionCategory, cost, id, filePath,
+                memo, name, ownCategory, releaseDate, unixTime
+            )
+        } else {
+            val id = documentID
+            return CollectionData(
+                collectionCategory, cost, id, filePath,
+                memo, name, ownCategory, releaseDate, unixTime
+            )
+        }
+    }
 
+    private fun saveCollectionData(newCollectionData: CollectionData) {
+
+        val newCollectionHashMap = makeCollectionHashMap(newCollectionData)
         val id = CurrentUser.user!!.id
 
-        CollectionData(collectionCategory, cost, id, filePath,
-            memo, name, ownCategory, releaseDate, unixTime)
-
-        db.collection("user").document(id).collection("collection").add(newCollection)
+        db.collection("user").document(id).collection("collection").add(newCollectionHashMap)
             .addOnSuccessListener {
-                if (filePath != "noImage")
-                {
+                if (filePath != "noImage") {
                     val imageName = it.id
                     val storageRef = storage.reference
                     val imgRef = storageRef.child("${id}/${imageName}.png")
                     val file = Uri.fromFile(File(filePath))
                     imgRef.putFile(file)
                 }
-
-        }
+            }
             .addOnFailureListener {
                 sendErrorToastMessage(this, it.toString())
             }
+    }
+
+    private fun updateCollectionData(newCollectionData: CollectionData) {
+        val collectionHashMap = makeCollectionHashMap(newCollectionData)
+        db.collection("user").document(CurrentUser.user!!.id).collection("collection")
+            .document(documentID).update(collectionHashMap)
+            .addOnFailureListener {
+                sendErrorToastMessage(this, "데이터가 저장되지 못했습니다. 잠시 후 시도해주세요.")
+            }
+    }
+
+    private fun makeCollectionHashMap(newCollectionData: CollectionData): HashMap<String, Any> {
+        return hashMapOf(
+            "unixTime" to unixTime,
+            "ownCategory" to newCollectionData.ownCategory,
+            "collectionCategory" to newCollectionData.collectionCategory,
+            "name" to newCollectionData.name,
+            "releaseDate" to newCollectionData.releaseDate,
+            "cost" to newCollectionData.cost,
+            "memo" to newCollectionData.memo,
+            "filePath" to filePath
+        )
     }
 
     override fun onCreateOptionsMenu(menu: Menu?): Boolean {

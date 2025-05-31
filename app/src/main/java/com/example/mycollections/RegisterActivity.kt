@@ -29,6 +29,7 @@ class RegisterActivity : AppCompatActivity() {
     private val binding: ActivityRegisterBinding by lazy {
         ActivityRegisterBinding.inflate(layoutInflater)
     }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(binding.root)
@@ -40,10 +41,9 @@ class RegisterActivity : AppCompatActivity() {
         }
 
         binding.confirmButton.setOnClickListener {
-            CoroutineScope(Dispatchers.Main).launch{
+            CoroutineScope(Dispatchers.Main).launch {
                 val registerConditionChecker = RegisterConditionChecker(binding)
-                if (registerConditionChecker.checkAllConditions())
-                {
+                if (registerConditionChecker.checkAllConditions()) {
                     createNewUser(binding)
                     makeInformDialog()
                 }
@@ -51,8 +51,7 @@ class RegisterActivity : AppCompatActivity() {
         }
     }
 
-    private fun createNewUser(binding: ActivityRegisterBinding)
-    {
+    private fun createNewUser(binding: ActivityRegisterBinding) {
         val email = binding.emailEditText.text.toString()
         val id = binding.idEditText.text.toString()
         val name = binding.nameEditText.text.toString()
@@ -67,16 +66,15 @@ class RegisterActivity : AppCompatActivity() {
             auth.createUserWithEmailAndPassword(email, password)
             auth.signOut()
         }
-            .addOnFailureListener{
+            .addOnFailureListener {
                 Toast.makeText(this, "오류가 발생했습니다.\n 잠시 후 다시 시도해주세요.", Toast.LENGTH_SHORT).show()
             }
     }
 
-    private fun makeInformDialog()
-    {
+    private fun makeInformDialog() {
         val dialogBinding = DialogInformBinding.inflate(layoutInflater)
-        dialogBinding.messageTextView.text="가입이 완료되었습니다.\n 초기화면으로 돌아갑니다."
-        AlertDialog.Builder(this).run{
+        dialogBinding.messageTextView.text = "가입이 완료되었습니다.\n 초기화면으로 돌아갑니다."
+        AlertDialog.Builder(this).run {
             setView(dialogBinding.root)
             dialogBinding.confirmButton.setOnClickListener {
                 finish()
